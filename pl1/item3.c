@@ -247,7 +247,7 @@ int main(void)
     }
     else if (run_item6)
     {
-        printf("Item 6");
+        printf("Item 6\n");
     }
     else
     {

@@ -11,6 +11,18 @@
 
 bool increase_clock_resolution(void)
 {
+    struct timespec res;
+    if(clock_getres(CLOCK_MONOTONIC, &res))
+    {
+        printf("Failed to get clock resolution.\n");
+    }
+    else
+    {
+        printf("Monotonic clock resolution: ");
+        print(&res);
+        printf("\n");
+    }
+
     return true;
 }
 
