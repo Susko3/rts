@@ -126,7 +126,7 @@ void *thread_entrypoint(void *arg)
     struct thread_info info = *(struct thread_info *)arg;
     struct timespec next_wake = info.initial_time;
 
-    while (next_wake.tv_sec < info.end_time.tv_sec) // don't care about ns
+    while (timespec_greater_than(&info.end_time, &next_wake))
     {
         sleep_until(&next_wake);
 
