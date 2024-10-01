@@ -10,6 +10,8 @@ void jitter_init(struct jitter_t *s)
     s->num = 0;
     s->sum = 0;
     s->sum_of_squares = 0;
+    s->max = 0;
+    s->min = 0;
 }
 
 void jitter_add_datapoint(struct jitter_t *s, struct timespec *t)
@@ -20,12 +22,23 @@ void jitter_add_datapoint(struct jitter_t *s, struct timespec *t)
     s->sum_of_squares += v * v;
 }
 
+void jitter_new_max(struct jitter_t *s, struct timespec *t)
+{
+    s->max = t->tv_sec + t->tv_nsec * 1e-9;
+}
+void jitter_new_min(struct jitter_t *s, struct timespec *t)
+{
+    s->min = t->tv_sec + t->tv_nsec * 1e-9;
+}
+
 double jitter_get(struct jitter_t *s)
 {
     if (s->num == 0)
         return 0;
 
-    double avg = s->sum / s->num;
+    /*double avg = s->sum / s->num;
     double variance = (s->sum_of_squares / s->num) - (avg * avg);
-    return sqrt(variance);
+    return sqrt(variance);*/
+    
+    return s->max - s->min;
 }

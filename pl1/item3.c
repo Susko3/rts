@@ -166,6 +166,7 @@ void print_log_table(struct thread_info info[], size_t n)
     {
         printf("Logs for task %zu\n", info[i].task);
         struct timespec max = {};
+        struct timespec min = {.tv_sec=30};
         struct jitter_t jitter;
         jitter_init(&jitter);
 
@@ -179,6 +180,12 @@ void print_log_table(struct thread_info info[], size_t n)
             if (timespec_greater_than(&response_time, &max))
             {
                 max = response_time;
+                jitter_new_max(&jitter,&response_time);
+            }
+            if (timespec_less_than(&response_time, &min))
+            {
+                min = response_time;
+                jitter_new_min(&jitter,&response_time);
             }
 
             jitter_add_datapoint(&jitter, &response_time);
@@ -203,6 +210,9 @@ void print_log_table(struct thread_info info[], size_t n)
 
         printf("Max response time:\t");
         print(&max);
+        printf("\n");
+        printf("Min response time:\t");
+        print(&min);
         printf("\n");
 
         printf("Jitter:\t\t\t%.9f s\n", jitter_get(&jitter));
