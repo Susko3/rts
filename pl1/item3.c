@@ -12,10 +12,11 @@
 
 #define NUM_TASKS 3
 
+const bool run_inverse = false;
 const bool run_item4a = false;
-const bool run_item4b = false;
-const bool run_item4b_and_invert = false;
-const bool run_item6 = true;
+const bool run_item4b = true;
+const bool run_item4b_and_invert = true;
+const bool run_item6 = false;
 
 void fail(void)
 {
@@ -290,6 +291,12 @@ int main(void)
             {.task = 3, .initial_time = initial_time, .end_time = end_time, .interval = {.tv_sec = 0, .tv_nsec = 300000000}, .priority = 1},
         };
 
+    if (run_inverse)
+    {
+        info[0].priority = 1;
+        info[1].priority = 2;
+        info[2].priority = 3;
+    }
     if (run_item4b_and_invert)
     {
         info[0].priority = 1;
