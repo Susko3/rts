@@ -58,4 +58,17 @@ static inline bool timespec_greater_than(struct timespec *a, struct timespec *b)
     }
     return false;
 }
+
+static inline bool timespec_less_than(struct timespec *a, struct timespec *b)
+{
+    if (a->tv_sec < b->tv_sec)
+    {
+        return true;
+    }
+    else if (a->tv_sec == b->tv_sec)
+    {
+        return a->tv_nsec < b->tv_nsec;
+    }
+    return false;
+}
 #endif

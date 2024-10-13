@@ -12,10 +12,11 @@
 
 #define NUM_TASKS 3
 
+const bool run_inverse = false;
 const bool run_item4a = false;
-const bool run_item4b = false;
-const bool run_item4b_and_invert = false;
-const bool run_item6 = true;
+const bool run_item4b = true;
+const bool run_item4b_and_invert = true;
+const bool run_item6 = false;
 
 void fail(void)
 {
@@ -165,7 +166,6 @@ void print_log_table(struct thread_info info[], size_t n)
     for (size_t i = 0; i < n; i++)
     {
         printf("Logs for task %zu\n", info[i].task);
-        struct timespec max = {};
         struct jitter_t jitter;
         jitter_init(&jitter);
 
@@ -175,11 +175,6 @@ void print_log_table(struct thread_info info[], size_t n)
 
             struct timespec response_time;
             timespec_diff(&tr->finished, &tr->desired_start, &response_time);
-
-            if (timespec_greater_than(&response_time, &max))
-            {
-                max = response_time;
-            }
 
             jitter_add_datapoint(&jitter, &response_time);
 
@@ -202,12 +197,17 @@ void print_log_table(struct thread_info info[], size_t n)
         printf("\n");
 
         printf("Max response time:\t");
-        print(&max);
+        print(jitter_get_max(&jitter));
+        printf("\n");
+        printf("Min response time:\t");
+        print(jitter_get_min(&jitter));
         printf("\n");
 
-        printf("Jitter:\t\t\t%.9f s\n", jitter_get(&jitter));
-
-        printf("\n");
+        struct timespec diff;
+        diff = jitter_get(&jitter);
+        printf("Jitter:\t\t\t");
+        print(&diff);
+        printf("\n\n");
     }
 }
 
@@ -279,6 +279,13 @@ int main(void)
             {.task = 2, .initial_time = initial_time, .end_time = end_time, .interval = {.tv_sec = 0, .tv_nsec = 200000000}, .priority = 2},
             {.task = 3, .initial_time = initial_time, .end_time = end_time, .interval = {.tv_sec = 0, .tv_nsec = 300000000}, .priority = 1},
         };
+
+    if (run_inverse)
+    {
+        info[0].priority = 1;
+        info[1].priority = 2;
+        info[2].priority = 3;
+    }
 
     if (run_item4b_and_invert)
     {
