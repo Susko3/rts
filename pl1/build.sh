@@ -12,7 +12,7 @@ build_and_run() {
 PS3="Select the work item (1-7): "
 
 select item in Item1 Item3 Item4_AlternativeA Item4_AlternativeB Item4_AlternativeB_Invert Item5 Item6; do
-    source_file=item3.c
+    source_file=item3-6.c
     func_file=func.o
 
     case $item in
