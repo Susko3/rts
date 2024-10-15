@@ -12,11 +12,21 @@
 
 #define NUM_TASKS 3
 
-const bool run_inverse = false;
-const bool run_item4a = false;
-const bool run_item4b = true;
-const bool run_item4b_and_invert = true;
-const bool run_item6 = false;
+enum WorkItem
+{
+    Item3,
+    Item4_AlternativeA,
+    Item4_AlternativeB,
+    Item4_AlternativeB_Invert,
+    Item5,
+    Item6,
+};
+
+#ifndef ITEM
+#define ITEM Item3
+#endif
+
+const enum WorkItem WORK_ITEM = ITEM;
 
 void fail(void)
 {
@@ -237,27 +247,42 @@ void item4a(struct timespec *inital_time, pthread_t threads[])
 
 int main(void)
 {
-    if (run_item4a)
+    switch (WORK_ITEM)
     {
-        printf("Item 4, Alternative A\n");
-    }
-    else if (run_item4b)
-    {
-        printf("Item 4, Alternative B%s\n", run_item4b_and_invert ? " (invert)" : "");
-    }
-    else if (run_item6)
-    {
-        printf("Item 6\n");
-    }
-    else
-    {
+    case Item3:
         printf("Item 3\n");
+        break;
+
+    case Item4_AlternativeA:
+        printf("Item 4, Alternative A\n");
+        break;
+
+    case Item4_AlternativeB:
+        printf("Item 4, Alternative B\n");
+        break;
+
+    case Item4_AlternativeB_Invert:
+        printf("Item 4, Alternative B (invert)\n");
+        break;
+
+    case Item5:
+        printf("Item 5\n");
+        break;
+
+    case Item6:
+        printf("Item 6\n");
+        break;
+
+    default:
+        fail();
+        break;
     }
 
     if (!set_realtime_priority())
         fail();
 
-    if (!run_item4b)
+    bool skip_pinning = WORK_ITEM == Item4_AlternativeB || WORK_ITEM == Item4_AlternativeB_Invert;
+    if (!skip_pinning)
     {
         if (!pin_this_thread())
             fail();
@@ -280,21 +305,13 @@ int main(void)
             {.task = 3, .initial_time = initial_time, .end_time = end_time, .interval = {.tv_sec = 0, .tv_nsec = 300000000}, .priority = 1},
         };
 
-    if (run_inverse)
+    if (WORK_ITEM == Item4_AlternativeB_Invert)
     {
         info[0].priority = 1;
         info[1].priority = 2;
         info[2].priority = 3;
     }
-
-    if (run_item4b_and_invert)
-    {
-        info[0].priority = 1;
-        info[1].priority = 2;
-        info[2].priority = 3;
-    }
-
-    if (run_item6)
+    else if (WORK_ITEM == Item6)
     {
         info[0].priority = 1;
         info[1].priority = 1;
@@ -305,7 +322,7 @@ int main(void)
 
     bootstrap_threads(info, threads, NUM_TASKS);
 
-    if (run_item4a)
+    if (WORK_ITEM == Item4_AlternativeA)
         item4a(&initial_time, threads);
 
     for (size_t i = 0; i < NUM_TASKS; i++)
