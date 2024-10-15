@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include "jitter.h"
 
 // Modified from:
