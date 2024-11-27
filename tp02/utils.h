@@ -14,6 +14,8 @@ bool set_realtime_priority(void);
 
 void print(struct timespec *t);
 
+void sleep_until(struct timespec *t);
+
 /**
  * @fn timespec_diff(struct timespec *, struct timespec *, struct timespec *)
  * @brief Compute the diff of two timespecs, that is a - b = result.

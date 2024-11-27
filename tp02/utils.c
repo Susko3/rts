@@ -1,5 +1,6 @@
 // #define _GNU_SOURCE
 
+#include <errno.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
@@ -64,4 +65,17 @@ void print(struct timespec *t)
         printf("-%ld.%09ld s", -t->tv_sec - 1, 1000000000L - t->tv_nsec);
     else
         printf("-%ld.%09ld s", -t->tv_sec, 0L);
+}
+
+void sleep_until(struct timespec *t)
+{
+    int ret;
+    do
+    {
+        ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, t, NULL);
+
+        if (ret)
+            printf("clock nanosleep failed with %d", ret);
+
+    } while (ret == EINTR);
 }
