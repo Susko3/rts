@@ -133,7 +133,10 @@ void *preprocess_discard_thread(void *arg)
         pthread_mutex_unlock(state->loaded.mutex);
 
         lidar_data outbound{};
-        preprocess_discard(inflight, &outbound);
+        float forward = 30;
+        float side = 15;
+        float top = 2;
+        preprocess_discard(inflight, &outbound,forward,side,top);
         delete inflight;
 
         pthread_mutex_lock(state->preprocessed.mutex);
@@ -163,6 +166,11 @@ void *identify_driveable_thread(void *arg)
 {
     auto state = static_cast<struct state *>(arg);
 
+    float forward = 30;
+    float side = 15;
+    float maxDiff = 2;
+    float maxIncline = 0.10;
+
     while (running)
     {
         pthread_mutex_lock(state->preprocessed.mutex);
@@ -185,7 +193,7 @@ void *identify_driveable_thread(void *arg)
         pthread_mutex_unlock(state->preprocessed.mutex);
 
         lidar_data output;
-        identify_driveable(&inflight, &output);
+        identify_driveable(&inflight, &output, forward,side, maxDiff, maxIncline);
 
         std::cout << "Final data size: " << output.points.size() << std::endl;
 
