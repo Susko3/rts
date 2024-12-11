@@ -7,6 +7,9 @@
 #include <cmath>
 #include <limits>
 
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud.h>
+
 void data_stats(lidar_data *data)
 {
     if (data->points.empty())
@@ -59,20 +62,20 @@ void data_stats(lidar_data *data)
     std::cout << "Number of points: " << num_points << std::endl;
     std::cout << "X: Min = " << min_x << ", Max = " << max_x << ", Mean = " << mean_x << ", Std = " << std_x << std::endl;
     std::cout << "Y: Min = " << min_y << ", Max = " << max_y << ", Mean = " << mean_y << ", Std = " << std_y << std::endl;
-    std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << std::endl;
+    std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << "\n" << std::endl;
 
 }
 
-lidar_data *load_data(std::string file_name)
+lidar_data *load_data(sensor_msgs::PointCloud cloud)
 {
     lidar_data *data = new lidar_data{};
 
-    std::ifstream file{file_name};
-
-    while (!file.eof())
+    for (const auto point : cloud.points)
     {
         point3d p;
-        file >> p.x >> p.y >> p.z;
+        p.x = point.x;
+        p.y = point.y;
+        p.z = point.z;
         data->points.push_back(p);
     }
 
@@ -106,7 +109,7 @@ void preprocess_discard(lidar_data *input, lidar_data *output, float forward=30,
     //      15 m to the sides and 4 m over the car
     for (const auto &p : input->points)
     {
-        if (p.x > 0 && abs(p.x)<forward && abs(p.y)<side && p.z<top)
+        if (p.x > 0 && p.x<forward && abs(p.y)<side && p.z<top)
             output->points.push_back(p);
     }
 
@@ -134,7 +137,7 @@ void identify_driveable(lidar_data *input, lidar_data *output, float forward=30,
             grid[cellIndex].push_back(p);
         }
     }
-
+    
     std::vector<point3d> drivable;
 
     for (const auto &cell : grid)
@@ -159,6 +162,7 @@ void identify_driveable(lidar_data *input, lidar_data *output, float forward=30,
             drivable.insert(drivable.end(), cell.begin(), cell.end());
         }
     }
+    
     for (const auto &p:drivable)
     {
         float distance = std::sqrt(std::pow(p.x, 2) + std::pow(p.y, 2));

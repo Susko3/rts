@@ -3,12 +3,17 @@
 #include <initializer_list>
 #include <iostream>
 #include <optional>
+#include <sys/time.h>
 
 #include <pthread.h>
 #include <unistd.h>
 
 #include "preprocess.h"
 #include "utils.h"
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 
 struct thread_safe_lidar_data
 {
@@ -27,17 +32,34 @@ struct thread_safe_lidar_data_storage
     pthread_cond_t *data_available;
 };
 
+struct thread_safe_lidar_cloud
+{
+	bool has_cloud;
+	bool processed;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *cloud_available;
+    pthread_cond_t *cloud_processed;
+};
+
 struct state
 {
     struct timespec initial_time;
     thread_safe_lidar_data loaded;
     thread_safe_lidar_data_storage preprocessed;
-    // thread_safe_lidar_data_storage identified;
+    thread_safe_lidar_cloud cloud;
 };
 
 static struct state state_unsafe;
 
 static volatile sig_atomic_t running = 0;
+
+ros::Publisher newPointCloud;
+
+bool runflag = false;
+
+sensor_msgs::PointCloud2::ConstPtr pointcloud;
+
+sensor_msgs::PointCloud::ConstPtr pointcloudolder;
 
 void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
@@ -56,10 +78,9 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
         pthread_mutex_unlock(state_unsafe.preprocessed.mutex);
     }
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void *load_data_thread(void *arg)
 {
-    std::cout << "Što sad?" << std::endl;
     struct timespec interval
     {
         0, 100000000
@@ -67,21 +88,32 @@ void *load_data_thread(void *arg)
 
     auto state = static_cast<struct state *>(arg);
 
-    std::initializer_list<std::string> files = {
-        "point_cloud1.txt",
-        "point_cloud2.txt",
-        "point_cloud3.txt",
-    };
-
-    int next_file = 0;
     struct timespec next_wake = state->initial_time;
-
+	
     while (running)
     {
         // TODO: fault detection if our cycle is over 10 Hz
         sleep_until(&next_wake);
+		
+		pthread_mutex_lock(state->cloud.mutex);
+		while (!state->cloud.has_cloud)
+        {
+            pthread_cond_wait(state->cloud.cloud_available, state->cloud.mutex);
+			
+            if (!running)
+            {
+                pthread_mutex_unlock(state->cloud.mutex);
+                return nullptr;
+            }
+        }
+		sensor_msgs::PointCloud output;
+		sensor_msgs::convertPointCloud2ToPointCloud(*pointcloud,output);
 
-        lidar_data *inflight = load_data(files.begin()[next_file]);
+        lidar_data *inflight = load_data(output);
+
+		state->cloud.has_cloud=false;
+
+		pthread_mutex_unlock(state->cloud.mutex);
 
         pthread_mutex_lock(state->loaded.mutex);
 
@@ -102,15 +134,16 @@ void *load_data_thread(void *arg)
         pthread_mutex_unlock(state->loaded.mutex);
 
         timespec_add(&next_wake, &interval, &next_wake);
-        next_file = (next_file + 1) % files.size();
     }
 
     return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void *preprocess_discard_thread(void *arg)
 {
-    std::cout << "Što sad2?" << std::endl;
+	
     auto state = static_cast<struct state *>(arg);
 
     while (running)
@@ -126,8 +159,7 @@ void *preprocess_discard_thread(void *arg)
                 pthread_mutex_unlock(state->loaded.mutex);
                 return nullptr;
             }
-        }
-
+		}
         lidar_data *inflight = state->loaded.data;
         state->loaded.data = nullptr;
         pthread_cond_signal(state->loaded.data_is_null);
@@ -164,15 +196,16 @@ void *preprocess_discard_thread(void *arg)
     return nullptr;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void *identify_driveable_thread(void *arg)
 {
-    std::cout << "Što sad3?" << std::endl;
     auto state = static_cast<struct state *>(arg);
 
     float forward = 30;
     float side = 15;
-    float maxDiff = 2;
-    float maxIncline = 0.10;
+    float maxDiff = 1;
+    float maxIncline = 0.01;
 
     while (running)
     {
@@ -188,7 +221,6 @@ void *identify_driveable_thread(void *arg)
                 return nullptr;
             }
         }
-
         lidar_data inflight = state->preprocessed.data;
         state->preprocessed.has_data = false;
         pthread_cond_signal(state->preprocessed.data_is_null);
@@ -196,28 +228,35 @@ void *identify_driveable_thread(void *arg)
         pthread_mutex_unlock(state->preprocessed.mutex);
 
         lidar_data output;
-        identify_driveable(&inflight, &output, forward,side, maxDiff, maxIncline);
+        identify_driveable(&inflight, &output, forward, side, maxDiff, maxIncline);
 
-        std::cout << "Final data size: " << output.points.size() << std::endl;
+		sensor_msgs::PointCloud final_output;
+    	final_output.header = pointcloud->header; // Use the header from /velodyne_points
 
-        struct timespec t;
-        clock_gettime(CLOCK_MONOTONIC, &t);
+		for (const auto &point : output.points)
+    	{
+			geometry_msgs::Point32 p;
+			p.x = point.x;
+			p.y = point.y;
+			p.z = point.z;
+			final_output.points.push_back(p);
+		}
 
-        std::cout << "Clock time: " << std::flush;
-        print(&t);
-        std::printf("\n\n");
+    	newPointCloud.publish(final_output);
+		state->cloud.processed=true;
+		pthread_cond_signal(state->cloud.cloud_processed);
     }
 
     return nullptr;
 }
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup_signal_handler()
 {
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = signal_handler;
-    assert(sigaction(SIGINT, &sa, nullptr) == 0);
+    sigaction(SIGINT, &sa, nullptr) == 0;
 }
 
 void setup_mutex_cond(struct state *state)
@@ -228,19 +267,41 @@ void setup_mutex_cond(struct state *state)
     state->preprocessed.mutex = new pthread_mutex_t;
     state->preprocessed.data_is_null = new pthread_cond_t;
     state->preprocessed.data_available = new pthread_cond_t;
+	state->cloud.mutex = new pthread_mutex_t;
+	state->cloud.cloud_available = new pthread_cond_t;
+	state->cloud.cloud_processed = new pthread_cond_t;
     pthread_mutex_init(state->loaded.mutex, nullptr);
     pthread_cond_init(state->loaded.data_is_null, nullptr);
     pthread_cond_init(state->loaded.data_available, nullptr);
     pthread_mutex_init(state->preprocessed.mutex, nullptr);
     pthread_cond_init(state->preprocessed.data_is_null, nullptr);
     pthread_cond_init(state->preprocessed.data_available, nullptr);
+	pthread_mutex_init(state->cloud.mutex, nullptr);
+    pthread_cond_init(state->cloud.cloud_available, nullptr);
+    pthread_cond_init(state->cloud.cloud_processed, nullptr);
 }
 
-int main()
+//
+
+
+void handlePointCloud(sensor_msgs::PointCloud2::ConstPtr scan_out)
 {
-    assert(set_realtime_priority());
-    assert(pin_this_thread());
-    assert(increase_clock_resolution());
+    pointcloud = scan_out;
+    runflag = true;
+}
+
+
+int main(int argc, char **argv){
+    ros::init(argc, argv, "strdemo");
+    ros::NodeHandle nh("~");
+    newPointCloud = nh.advertise<sensor_msgs::PointCloud>("/output_results", 100);
+    ros::Subscriber PointCloudHandlervelodyne =
+        nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 100, handlePointCloud);
+    ros::Rate rate(100.0);
+
+	set_realtime_priority();
+    pin_this_thread();
+    increase_clock_resolution();
 
     running = 1;
     setup_mutex_cond(&state_unsafe);
@@ -253,18 +314,41 @@ int main()
 
     pthread_t load, prep, id;
 
-    assert(!pthread_create(&load, nullptr, load_data_thread, &state_unsafe));
-    assert(!pthread_create(&prep, nullptr, preprocess_discard_thread, &state_unsafe));
-    assert(!pthread_create(&id, nullptr, identify_driveable_thread, &state_unsafe));
+    pthread_create(&load, nullptr, load_data_thread, &state_unsafe);
+	pthread_create(&prep, nullptr, preprocess_discard_thread, &state_unsafe);
+    pthread_create(&id, nullptr, identify_driveable_thread, &state_unsafe);
 
-    pthread_join(load, nullptr);
+
+	auto state = static_cast<struct state *>(&state_unsafe);
+
+    while (nh.ok()){
+        if(runflag){
+			pthread_mutex_lock(state->cloud.mutex);
+			state -> cloud.has_cloud = true;
+			pthread_cond_signal(state->cloud.cloud_available);
+			while (!state->cloud.processed)
+			{
+				pthread_cond_wait(state->cloud.cloud_processed, state->cloud.mutex);
+
+				if (!running)
+				{
+					pthread_mutex_unlock(state->cloud.mutex);
+					return 1;
+				}
+			}
+			state->cloud.processed = false;
+			pthread_mutex_unlock(state->cloud.mutex);
+            runflag = false;
+        }
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+	pthread_join(load, nullptr);
     pthread_join(prep, nullptr);
     pthread_join(id, nullptr);
 
     std::cout << "Main thread is finished." << std::endl;
 
-    reset_clock_resolution();
-
-    // There is no need to destroy the mutexes, conditional variables or free the memory:
-    // the operating system will do it for us :)
+    return 1;
 }

@@ -54,9 +54,9 @@ void process(std::string file_name)
 
     assert_some_filtered(data, &preprocessed);
 
-    file_name.erase(file_name.end()-4,file_name.end());
+    //file_name.erase(file_name.end()-4,file_name.end());
 
-    write_data(file_name+"out1.txt", &preprocessed);
+    //write_data(file_name+"out1.txt", &preprocessed);
 
     lidar_data driveable = {};
 
@@ -70,9 +70,9 @@ void process(std::string file_name)
     print(&delta_id);
     std::printf("\n");
 
-    assert_some_filtered(&preprocessed, &driveable);
+    //assert_some_filtered(&preprocessed, &driveable);
 
-    write_data(file_name+"out2.txt", &driveable);
+    write_data(file_name+"out.txt", &driveable);
 
     delete data;
 }
