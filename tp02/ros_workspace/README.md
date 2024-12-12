@@ -56,6 +56,7 @@ rosrun strdemo strdemo_node
 Enable `/output_results` in rqt.
 
 In rviz, 'Add' &rarr; 'By topic' &rarr; '/output_results' &rarr; 'PointCloud'.
+Also, change the Fixed Frame to `velodyne`.
 
 ## Play and watch `rviz`
 
