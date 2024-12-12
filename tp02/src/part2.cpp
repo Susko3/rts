@@ -31,6 +31,23 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
     }
 }
 
+lidar_data *load_data_from_files()
+{
+    std::initializer_list<std::string> files = {
+        "point_cloud1.txt",
+        "point_cloud2.txt",
+        "point_cloud3.txt",
+    };
+
+    static int next_file = 0;
+
+    lidar_data *data = load_data(files.begin()[next_file]);
+
+    next_file = (next_file + 1) % files.size();
+
+    return data;
+}
+
 void *load_data_thread(void *arg)
 {
     struct timespec interval
@@ -40,13 +57,6 @@ void *load_data_thread(void *arg)
 
     auto state = static_cast<struct state *>(arg);
 
-    std::initializer_list<std::string> files = {
-        "point_cloud1.txt",
-        "point_cloud2.txt",
-        "point_cloud3.txt",
-    };
-
-    int next_file = 0;
     struct timespec next_wake = state->initial_time;
 
     while (state->running)
@@ -54,7 +64,7 @@ void *load_data_thread(void *arg)
         // TODO: fault detection if our cycle is over 10 Hz
         sleep_until(&next_wake);
 
-        lidar_data *inflight = load_data(files.begin()[next_file]);
+        lidar_data *inflight = state->load_data_blocking();
 
         pthread_mutex_lock(state->loaded.mutex);
 
@@ -75,7 +85,6 @@ void *load_data_thread(void *arg)
         pthread_mutex_unlock(state->loaded.mutex);
 
         timespec_add(&next_wake, &interval, &next_wake);
-        next_file = (next_file + 1) % files.size();
     }
 
     return nullptr;
@@ -210,6 +219,7 @@ int main()
     assert(pin_this_thread());
     assert(increase_clock_resolution());
 
+    state_unsafe.load_data_blocking = load_data_from_files;
     state_unsafe.publish_data = print_data;
 
     state_unsafe.running = 1;

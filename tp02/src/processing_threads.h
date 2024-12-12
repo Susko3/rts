@@ -33,6 +33,7 @@ struct state
     thread_safe_lidar_data_storage preprocessed;
     volatile sig_atomic_t running = 0;
 
+    std::function<lidar_data *()> load_data_blocking;
     std::function<void(lidar_data *)> publish_data;
 };
 
