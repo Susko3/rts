@@ -73,7 +73,7 @@ void load_data(std::string file_name, lidar_data &data)
         data.points.push_back(p);
     }
 
-    data_stats(data);
+    // data_stats(data);
 }
 
 void write_data(std::string file_name, const lidar_data &data)

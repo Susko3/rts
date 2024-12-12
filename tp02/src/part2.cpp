@@ -31,6 +31,9 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
     }
 }
 
+const int COUNT = 3;
+struct timespec start_times[COUNT];
+
 void load_data_from_files(lidar_data &data)
 {
     std::initializer_list<std::string> files = {
@@ -38,11 +41,11 @@ void load_data_from_files(lidar_data &data)
         "point_cloud2.txt",
         "point_cloud3.txt",
     };
+    assert(files.size() == COUNT);
 
     static int next_file = 0;
-
+    clock_gettime(CLOCK_MONOTONIC, &start_times[next_file]);
     load_data(files.begin()[next_file], data);
-
     next_file = (next_file + 1) % files.size();
 }
 
@@ -57,14 +60,18 @@ void setup_signal_handler()
 
 void print_data(const lidar_data &data)
 {
-    std::cout << "Final data size: " << data.points.size() << std::endl;
+    static int i = 0;
 
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
+    timespec_diff(&t, &start_times[i], &t);
 
-    std::cout << "Clock time: " << std::flush;
+    std::cout << "Final data size: " << data.points.size() << std::endl;
+    std::cout << "Time taken: " << std::flush;
     print(&t);
     std::printf("\n\n");
+
+    i = (i + 1) % COUNT;
 }
 
 int main()
