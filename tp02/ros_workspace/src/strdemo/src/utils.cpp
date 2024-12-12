@@ -1,11 +1,8 @@
-#define _GNU_SOURCE
-
 #include <errno.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
 #include <sched.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 
 #include "utils.h"

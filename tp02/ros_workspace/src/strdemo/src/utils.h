@@ -2,7 +2,7 @@
 #define UTILS_H
 
 #include <stdbool.h>
-#include <sys/time.h>
+#include <time.h>
 
 bool increase_clock_resolution(void);
 
