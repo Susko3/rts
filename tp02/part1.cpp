@@ -3,7 +3,6 @@
 
 #include "preprocess.h"
 #include "utils.h"
-// ROS version 1: Rviz
 
 timespec start;
 
@@ -41,11 +40,7 @@ void process(std::string file_name)
     lidar_data preprocessed = {};
 
     start_timing();
-    //calculations for speed offset should go here
-    float forward = 30;
-    float side = 15;
-    float top = 4;
-    preprocess_discard(data, &preprocessed, forward, side, top);
+    preprocess_discard(data, &preprocessed);
     auto delta_pp = end_timing();
 
     std::printf("Preprocessing took:\t");
@@ -54,25 +49,19 @@ void process(std::string file_name)
 
     assert_some_filtered(data, &preprocessed);
 
-    //file_name.erase(file_name.end()-4,file_name.end());
-
-    //write_data(file_name+"out1.txt", &preprocessed);
-
     lidar_data driveable = {};
 
     start_timing();
-    float maxDiff = 0.5; 
-    float maxIncline = 0.1; 
-    identify_driveable(&preprocessed, &driveable, forward, side, maxDiff,maxIncline);
+    identify_driveable(&preprocessed, &driveable);
     auto delta_id = end_timing();
 
     std::printf("Identifying took:\t");
     print(&delta_id);
     std::printf("\n");
 
-    //assert_some_filtered(&preprocessed, &driveable);
+    assert_some_filtered(&preprocessed, &driveable);
 
-    write_data(file_name+"out.txt", &driveable);
+    write_data(file_name + "_out.txt", &driveable);
 
     delete data;
 }
