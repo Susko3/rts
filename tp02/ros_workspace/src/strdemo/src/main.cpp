@@ -291,6 +291,8 @@ void handlePointCloud(sensor_msgs::PointCloud2::ConstPtr scan_out)
 
 int main(int argc, char **argv)
 {
+    std::cout << "tvoja mama" << std::endl;
+    
     ros::init(argc, argv, "strdemo");
     ros::NodeHandle nh("~");
     newPointCloud = nh.advertise<sensor_msgs::PointCloud>("/output_results", 100);
