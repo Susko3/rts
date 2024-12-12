@@ -1,14 +1,10 @@
-#include "preprocess.h"
 #include <cassert>
-#include <fstream>
-
-#include <iostream>
-#include <vector>
 #include <cmath>
+#include <fstream>
+#include <iostream>
 #include <limits>
 
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud.h>
+#include "preprocess.h"
 
 void data_stats(lidar_data *data)
 {

@@ -7,12 +7,13 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "preprocess.h"
-#include "utils.h"
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
+
+#include "preprocess.h"
+#include "utils.h"
 
 struct thread_safe_lidar_data
 {
