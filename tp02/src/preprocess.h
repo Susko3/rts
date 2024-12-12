@@ -30,6 +30,6 @@ void preprocess_discard(lidar_data *input, lidar_data *output, float forward = 3
 // void discard_outliers(lidar_data *data);
 
 // discard walls, sidewalks, other obstacles
-void identify_driveable(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float maxDiff = 0.5, float maxIncline = 0.15);
+void identify_driveable(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float maxDiff = 1, float maxIncline = 0.01);
 
 #endif
