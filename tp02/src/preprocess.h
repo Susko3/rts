@@ -1,3 +1,6 @@
+#ifndef PREPROCESS_H
+#define PREPROCESS_H
+
 #include <vector>
 #include <string>
 
@@ -25,3 +28,5 @@ void preprocess_discard(lidar_data *input, lidar_data *output, float forward = 3
 
 // discard walls, sidewalks, other obstacles
 void identify_driveable(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float maxDiff = 0.5, float maxIncline = 0.15);
+
+#endif

@@ -9,41 +9,15 @@
 
 #include "preprocess.h"
 #include "utils.h"
-
-struct thread_safe_lidar_data
-{
-    lidar_data *data;
-    pthread_mutex_t *mutex;
-    pthread_cond_t *data_is_null;
-    pthread_cond_t *data_available;
-};
-
-struct thread_safe_lidar_data_storage
-{
-    lidar_data data;
-    bool has_data;
-    pthread_mutex_t *mutex;
-    pthread_cond_t *data_is_null;
-    pthread_cond_t *data_available;
-};
-
-struct state
-{
-    struct timespec initial_time;
-    thread_safe_lidar_data loaded;
-    thread_safe_lidar_data_storage preprocessed;
-    // thread_safe_lidar_data_storage identified;
-};
+#include "processing_threads.h"
 
 static struct state state_unsafe;
-
-static volatile sig_atomic_t running = 0;
 
 void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
     if (sig == SIGINT)
     {
-        running = 0;
+        state_unsafe.running = 0;
 
         pthread_mutex_lock(state_unsafe.loaded.mutex);
         pthread_cond_signal(state_unsafe.loaded.data_available);
@@ -75,7 +49,7 @@ void *load_data_thread(void *arg)
     int next_file = 0;
     struct timespec next_wake = state->initial_time;
 
-    while (running)
+    while (state->running)
     {
         // TODO: fault detection if our cycle is over 10 Hz
         sleep_until(&next_wake);
@@ -88,7 +62,7 @@ void *load_data_thread(void *arg)
         {
             pthread_cond_wait(state->loaded.data_is_null, state->loaded.mutex);
 
-            if (!running)
+            if (!state->running)
             {
                 pthread_mutex_unlock(state->loaded.mutex);
                 return nullptr;
@@ -111,7 +85,7 @@ void *preprocess_discard_thread(void *arg)
 {
     auto state = static_cast<struct state *>(arg);
 
-    while (running)
+    while (state->running)
     {
         pthread_mutex_lock(state->loaded.mutex);
 
@@ -119,7 +93,7 @@ void *preprocess_discard_thread(void *arg)
         {
             pthread_cond_wait(state->loaded.data_available, state->loaded.mutex);
 
-            if (!running)
+            if (!state->running)
             {
                 pthread_mutex_unlock(state->loaded.mutex);
                 return nullptr;
@@ -142,7 +116,7 @@ void *preprocess_discard_thread(void *arg)
         {
             pthread_cond_wait(state->preprocessed.data_is_null, state->preprocessed.mutex);
 
-            if (!running)
+            if (!state->running)
             {
                 pthread_mutex_unlock(state->preprocessed.mutex);
                 return nullptr;
@@ -163,7 +137,7 @@ void *identify_driveable_thread(void *arg)
 {
     auto state = static_cast<struct state *>(arg);
 
-    while (running)
+    while (state->running)
     {
         pthread_mutex_lock(state->preprocessed.mutex);
 
@@ -171,7 +145,7 @@ void *identify_driveable_thread(void *arg)
         {
             pthread_cond_wait(state->preprocessed.data_available, state->preprocessed.mutex);
 
-            if (!running)
+            if (!state->running)
             {
                 pthread_mutex_unlock(state->preprocessed.mutex);
                 return nullptr;
@@ -231,7 +205,7 @@ int main()
     assert(pin_this_thread());
     assert(increase_clock_resolution());
 
-    running = 1;
+    state_unsafe.running = 1;
     setup_mutex_cond(&state_unsafe);
 
     setup_signal_handler();
