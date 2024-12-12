@@ -29,4 +29,12 @@ struct state
     std::function<void(lidar_data *)> publish_data;
 };
 
+void setup_mutex_cond(struct state *state);
+
+void *load_data_thread(void *arg);
+
+void *preprocess_discard_thread(void *arg);
+
+void *identify_driveable_thread(void *arg);
+
 #endif
