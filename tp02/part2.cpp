@@ -59,7 +59,6 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 
 void *load_data_thread(void *arg)
 {
-    std::cout << "Što sad?" << std::endl;
     struct timespec interval
     {
         0, 100000000
@@ -110,7 +109,6 @@ void *load_data_thread(void *arg)
 
 void *preprocess_discard_thread(void *arg)
 {
-    std::cout << "Što sad2?" << std::endl;
     auto state = static_cast<struct state *>(arg);
 
     while (running)
@@ -166,7 +164,6 @@ void *preprocess_discard_thread(void *arg)
 
 void *identify_driveable_thread(void *arg)
 {
-    std::cout << "Što sad3?" << std::endl;
     auto state = static_cast<struct state *>(arg);
 
     float forward = 30;
