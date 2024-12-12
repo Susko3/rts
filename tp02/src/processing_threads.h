@@ -2,6 +2,7 @@
 #define PROCESSING_THREADS_H
 
 #include <csignal>
+#include <functional>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -31,6 +32,8 @@ struct state
     thread_safe_lidar_data loaded;
     thread_safe_lidar_data_storage preprocessed;
     volatile sig_atomic_t running = 0;
+
+    std::function<void(lidar_data *)> publish_data;
 };
 
 #endif

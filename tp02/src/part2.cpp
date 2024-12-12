@@ -161,14 +161,7 @@ void *identify_driveable_thread(void *arg)
         lidar_data output;
         identify_driveable(&inflight, &output);
 
-        std::cout << "Final data size: " << output.points.size() << std::endl;
-
-        struct timespec t;
-        clock_gettime(CLOCK_MONOTONIC, &t);
-
-        std::cout << "Clock time: " << std::flush;
-        print(&t);
-        std::printf("\n\n");
+        state->publish_data(&output);
     }
 
     return nullptr;
@@ -199,11 +192,25 @@ void setup_mutex_cond(struct state *state)
     pthread_cond_init(state->preprocessed.data_available, nullptr);
 }
 
+void print_data(lidar_data *data)
+{
+    std::cout << "Final data size: " << data->points.size() << std::endl;
+
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+
+    std::cout << "Clock time: " << std::flush;
+    print(&t);
+    std::printf("\n\n");
+}
+
 int main()
 {
     assert(set_realtime_priority());
     assert(pin_this_thread());
     assert(increase_clock_resolution());
+
+    state_unsafe.publish_data = print_data;
 
     state_unsafe.running = 1;
     setup_mutex_cond(&state_unsafe);
