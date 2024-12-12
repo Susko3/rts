@@ -4,7 +4,7 @@
 #include <iostream>
 #include <limits>
 
-#include "preprocess.h"
+#include "ros_preprocess.h"
 
 void data_stats(lidar_data *data)
 {
