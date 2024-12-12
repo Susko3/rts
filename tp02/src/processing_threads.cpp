@@ -35,6 +35,7 @@ void *load_data_thread(void *arg)
         }
 
         state->loaded.data = inflight;
+        state->loaded.has_data = true;
         pthread_cond_signal(state->loaded.data_available);
 
         pthread_mutex_unlock(state->loaded.mutex);
