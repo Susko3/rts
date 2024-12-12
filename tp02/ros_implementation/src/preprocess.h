@@ -19,7 +19,7 @@ struct lidar_data
 lidar_data *load_data(sensor_msgs::PointCloud cloud);
 void write_data(std::string file_name, lidar_data *data);
 
-void preprocess_discard(lidar_data* input, lidar_data* output, float forward, float side, float top);
+void preprocess_discard(lidar_data *input, lidar_data *output, float forward, float side, float top);
 
 // void discard_behind(lidar_data *data);
 // void discard_car_points(lidar_data *data);
@@ -27,4 +27,4 @@ void preprocess_discard(lidar_data* input, lidar_data* output, float forward, fl
 // void discard_outliers(lidar_data *data);
 
 // discard walls, sidewalks, other obstacles
-void identify_driveable(lidar_data* input, lidar_data* output,float forward, float side, float maxDiff, float maxIncline);
+void identify_driveable(lidar_data *input, lidar_data *output, float forward, float side, float maxDiff, float maxIncline);

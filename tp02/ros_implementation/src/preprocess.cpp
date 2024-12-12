@@ -62,8 +62,8 @@ void data_stats(lidar_data *data)
     std::cout << "Number of points: " << num_points << std::endl;
     std::cout << "X: Min = " << min_x << ", Max = " << max_x << ", Mean = " << mean_x << ", Std = " << std_x << std::endl;
     std::cout << "Y: Min = " << min_y << ", Max = " << max_y << ", Mean = " << mean_y << ", Std = " << std_y << std::endl;
-    std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << "\n" << std::endl;
-
+    std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << "\n"
+              << std::endl;
 }
 
 lidar_data *load_data(sensor_msgs::PointCloud cloud)
@@ -80,7 +80,7 @@ lidar_data *load_data(sensor_msgs::PointCloud cloud)
     }
 
     data_stats(data);
-    
+
     return data;
 }
 
@@ -94,29 +94,27 @@ void write_data(std::string file_name, lidar_data *data)
     }
 }
 
-void preprocess_discard(lidar_data *input, lidar_data *output, float forward=30, float side=15, float top=2)
+void preprocess_discard(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float top = 2)
 {
     assert(input);
     assert(output);
     assert(output->points.size() == 0);
 
-    //2.1.  Remove back of the car
-    //2.2.  Detect and remove two groups (clusters) of points that are located
-    //      very close to the car. Covered by x<0 as well because 
-    //      cluster are located in x<0
-    //2.3.  Discard also points that clearly do not correspond to the 
-    //      ground/road (i.e., the outliers). Further than 30 m ahead,
-    //      15 m to the sides and 4 m over the car
+    // 2.1.  Remove back of the car
+    // 2.2.  Detect and remove two groups (clusters) of points that are located
+    //       very close to the car. Covered by x<0 as well because
+    //       cluster are located in x<0
+    // 2.3.  Discard also points that clearly do not correspond to the
+    //       ground/road (i.e., the outliers). Further than 30 m ahead,
+    //       15 m to the sides and 4 m over the car
     for (const auto &p : input->points)
     {
-        if (p.x > 0 && p.x<forward && abs(p.y)<side && p.z<top)
+        if (p.x > 0 && p.x < forward && abs(p.y) < side && p.z < top)
             output->points.push_back(p);
     }
-
-    
 }
 
-void identify_driveable(lidar_data *input, lidar_data *output, float forward=30, float side=15, float maxDiff=0.5, float maxIncline=0.15)
+void identify_driveable(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float maxDiff = 0.5, float maxIncline = 0.15)
 {
     assert(input);
     assert(output);
@@ -125,19 +123,19 @@ void identify_driveable(lidar_data *input, lidar_data *output, float forward=30,
     forward = ceil(forward);
     side = ceil(side);
 
-    std::vector<std::vector<point3d>> grid(forward*(side*2));
+    std::vector<std::vector<point3d>> grid(forward * (side * 2));
     for (const auto &p : input->points)
     {
         int cellX = static_cast<int>(floor(p.x));
-        int cellY = static_cast<int>(floor(p.y)+side);
+        int cellY = static_cast<int>(floor(p.y) + side);
 
-        if (cellX >= 0 && cellX < forward && cellY >= 0 && cellY < side*2)
+        if (cellX >= 0 && cellX < forward && cellY >= 0 && cellY < side * 2)
         {
             int cellIndex = cellY * forward + cellX;
             grid[cellIndex].push_back(p);
         }
     }
-    
+
     std::vector<point3d> drivable;
 
     for (const auto &cell : grid)
@@ -162,11 +160,11 @@ void identify_driveable(lidar_data *input, lidar_data *output, float forward=30,
             drivable.insert(drivable.end(), cell.begin(), cell.end());
         }
     }
-    
-    for (const auto &p:drivable)
+
+    for (const auto &p : drivable)
     {
         float distance = std::sqrt(std::pow(p.x, 2) + std::pow(p.y, 2));
-        if(p.z<=distance*maxIncline)
+        if (p.z <= distance * maxIncline)
         {
             output->points.push_back(p);
         }
