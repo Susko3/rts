@@ -30,7 +30,8 @@ void assert_some_filtered(lidar_data *pr, lidar_data *dr)
 void process(std::string file_name)
 {
     start_timing();
-    lidar_data *data = load_data(file_name);
+    lidar_data data{};
+    load_data(file_name, &data);
     auto delta_load = end_timing();
 
     std::printf("Loading took:\t\t");
@@ -40,14 +41,14 @@ void process(std::string file_name)
     lidar_data preprocessed = {};
 
     start_timing();
-    preprocess_discard(data, &preprocessed);
+    preprocess_discard(&data, &preprocessed);
     auto delta_pp = end_timing();
 
     std::printf("Preprocessing took:\t");
     print(&delta_pp);
     std::printf("\n");
 
-    assert_some_filtered(data, &preprocessed);
+    assert_some_filtered(&data, &preprocessed);
 
     lidar_data driveable = {};
 
@@ -62,8 +63,6 @@ void process(std::string file_name)
     assert_some_filtered(&preprocessed, &driveable);
 
     write_data(file_name + "_out.txt", &driveable);
-
-    delete data;
 }
 
 int main()

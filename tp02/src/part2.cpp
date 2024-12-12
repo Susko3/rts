@@ -31,7 +31,7 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
     }
 }
 
-lidar_data *load_data_from_files()
+void load_data_from_files(lidar_data *data)
 {
     std::initializer_list<std::string> files = {
         "point_cloud1.txt",
@@ -41,11 +41,9 @@ lidar_data *load_data_from_files()
 
     static int next_file = 0;
 
-    lidar_data *data = load_data(files.begin()[next_file]);
+    load_data(files.begin()[next_file], data);
 
     next_file = (next_file + 1) % files.size();
-
-    return data;
 }
 
 void *load_data_thread(void *arg)
@@ -64,11 +62,12 @@ void *load_data_thread(void *arg)
         // TODO: fault detection if our cycle is over 10 Hz
         sleep_until(&next_wake);
 
-        lidar_data *inflight = state->load_data_blocking();
+        lidar_data inflight{};
+        state->load_data_blocking(&inflight);
 
         pthread_mutex_lock(state->loaded.mutex);
 
-        while (state->loaded.data != nullptr)
+        while (state->loaded.has_data)
         {
             pthread_cond_wait(state->loaded.data_is_null, state->loaded.mutex);
 
@@ -98,7 +97,7 @@ void *preprocess_discard_thread(void *arg)
     {
         pthread_mutex_lock(state->loaded.mutex);
 
-        while (state->loaded.data == nullptr)
+        while (!state->loaded.has_data)
         {
             pthread_cond_wait(state->loaded.data_available, state->loaded.mutex);
 
@@ -109,15 +108,14 @@ void *preprocess_discard_thread(void *arg)
             }
         }
 
-        lidar_data *inflight = state->loaded.data;
-        state->loaded.data = nullptr;
+        lidar_data inflight = state->loaded.data;
+        state->loaded.has_data = false;
         pthread_cond_signal(state->loaded.data_is_null);
 
         pthread_mutex_unlock(state->loaded.mutex);
 
         lidar_data outbound{};
-        preprocess_discard(inflight, &outbound);
-        delete inflight;
+        preprocess_discard(&inflight, &outbound);
 
         pthread_mutex_lock(state->preprocessed.mutex);
 

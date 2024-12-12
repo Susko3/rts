@@ -62,10 +62,8 @@ void data_stats(lidar_data *data)
     std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << std::endl;
 }
 
-lidar_data *load_data(std::string file_name)
+void load_data(std::string file_name, lidar_data *data)
 {
-    lidar_data *data = new lidar_data{};
-
     std::ifstream file{file_name};
 
     while (!file.eof())
@@ -76,8 +74,6 @@ lidar_data *load_data(std::string file_name)
     }
 
     data_stats(data);
-
-    return data;
 }
 
 void write_data(std::string file_name, lidar_data *data)
