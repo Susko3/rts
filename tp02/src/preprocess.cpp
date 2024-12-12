@@ -7,14 +7,14 @@
 #include <cmath>
 #include <limits>
 
-void data_stats(lidar_data *data)
+void data_stats(const lidar_data &data)
 {
-    if (data->points.empty())
+    if (data.points.empty())
     {
         std::cout << "Lidar data has no points." << std::endl;
     }
 
-    size_t num_points = data->points.size();
+    size_t num_points = data.points.size();
     float min_x = std::numeric_limits<float>::max();
     float min_y = std::numeric_limits<float>::max();
     float min_z = std::numeric_limits<float>::max();
@@ -25,7 +25,7 @@ void data_stats(lidar_data *data)
 
     float sum_x = 0, sum_y = 0, sum_z = 0;
 
-    for (const auto &p : data->points)
+    for (const auto &p : data.points)
     {
         min_x = std::min(min_x, p.x);
         min_y = std::min(min_y, p.y);
@@ -45,7 +45,7 @@ void data_stats(lidar_data *data)
     float mean_z = sum_z / num_points;
 
     float sum_sq_diff_x = 0, sum_sq_diff_y = 0, sum_sq_diff_z = 0;
-    for (const auto &p : data->points)
+    for (const auto &p : data.points)
     {
         sum_sq_diff_x += (p.x - mean_x) * (p.x - mean_x);
         sum_sq_diff_y += (p.y - mean_y) * (p.y - mean_y);
@@ -62,7 +62,7 @@ void data_stats(lidar_data *data)
     std::cout << "Z: Min = " << min_z << ", Max = " << max_z << ", Mean = " << mean_z << ", Std = " << std_z << std::endl;
 }
 
-void load_data(std::string file_name, lidar_data *data)
+void load_data(std::string file_name, lidar_data &data)
 {
     std::ifstream file{file_name};
 
@@ -70,27 +70,25 @@ void load_data(std::string file_name, lidar_data *data)
     {
         point3d p;
         file >> p.x >> p.y >> p.z;
-        data->points.push_back(p);
+        data.points.push_back(p);
     }
 
     data_stats(data);
 }
 
-void write_data(std::string file_name, lidar_data *data)
+void write_data(std::string file_name, const lidar_data &data)
 {
     std::ofstream file{file_name};
 
-    for (const auto &p : data->points)
+    for (const auto &p : data.points)
     {
         file << p.x << ' ' << p.y << ' ' << p.z << '\n';
     }
 }
 
-void preprocess_discard(lidar_data *input, lidar_data *output, float forward, float side, float top)
+void preprocess_discard(const lidar_data &input, lidar_data &output, float forward, float side, float top)
 {
-    assert(input);
-    assert(output);
-    assert(output->points.size() == 0);
+    assert(output.points.size() == 0);
 
     // 2.1.  Remove back of the car
     // 2.2.  Detect and remove two groups (clusters) of points that are located
@@ -99,24 +97,22 @@ void preprocess_discard(lidar_data *input, lidar_data *output, float forward, fl
     // 2.3.  Discard also points that clearly do not correspond to the
     //       ground/road (i.e., the outliers). Further than 30 m ahead,
     //       15 m to the sides and 4 m over the car
-    for (const auto &p : input->points)
+    for (const auto &p : input.points)
     {
         if (p.x > 0 && abs(p.x) < forward && abs(p.y) < side && p.z < top)
-            output->points.push_back(p);
+            output.points.push_back(p);
     }
 }
 
-void identify_driveable(lidar_data *input, lidar_data *output, float forward, float side, float maxDiff, float maxIncline)
+void identify_driveable(const lidar_data &input, lidar_data &output, float forward, float side, float maxDiff, float maxIncline)
 {
-    assert(input);
-    assert(output);
-    assert(output->points.size() == 0);
+    assert(output.points.size() == 0);
 
     forward = ceil(forward);
     side = ceil(side);
 
     std::vector<std::vector<point3d>> grid(forward * (side * 2));
-    for (const auto &p : input->points)
+    for (const auto &p : input.points)
     {
         int cellX = static_cast<int>(floor(p.x));
         int cellY = static_cast<int>(floor(p.y) + side);
@@ -157,7 +153,7 @@ void identify_driveable(lidar_data *input, lidar_data *output, float forward, fl
         float distance = std::sqrt(std::pow(p.x, 2) + std::pow(p.y, 2));
         if (p.z <= distance * maxIncline)
         {
-            output->points.push_back(p);
+            output.points.push_back(p);
         }
     }
 }

@@ -25,11 +25,11 @@ struct state
     thread_safe_lidar_data_storage preprocessed;
     volatile sig_atomic_t running = 0;
 
-    std::function<void(lidar_data *)> load_data_blocking;
-    std::function<void(lidar_data *)> publish_data;
+    std::function<void(lidar_data&)> load_data_blocking;
+    std::function<void(const lidar_data&)> publish_data;
 };
 
-void setup_mutex_cond(struct state *state);
+void setup_mutex_cond(struct state &state);
 
 void *load_data_thread(void *arg);
 

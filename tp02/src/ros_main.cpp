@@ -75,7 +75,7 @@ void handlePointCloud(sensor_msgs::PointCloud2::ConstPtr scan_out)
     pthread_mutex_unlock(&point_cloud_mutex);
 }
 
-void load_data_from_ros(lidar_data *data)
+void load_data_from_ros(lidar_data &data)
 {
     sensor_msgs::PointCloud output;
 
@@ -101,18 +101,18 @@ void load_data_from_ros(lidar_data *data)
         p.x = point.x;
         p.y = point.y;
         p.z = point.z;
-        data->points.push_back(p);
+        data.points.push_back(p);
     }
 
     data_stats(data);
 }
 
-void publish_data(lidar_data *data)
+void publish_data(const lidar_data &data)
 {
     sensor_msgs::PointCloud final_output;
     final_output.header = point_cloud->header; // Use the header from /velodyne_points
 
-    for (const auto &point : data->points)
+    for (const auto &point : data.points)
     {
         geometry_msgs::Point32 p;
         p.x = point.x;
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
     state_unsafe.publish_data = publish_data;
 
     state_unsafe.running = 1;
-    setup_mutex_cond(&state_unsafe);
+    setup_mutex_cond(state_unsafe);
 
     setup_signal_handler();
 

@@ -19,7 +19,7 @@ void *load_data_thread(void *arg)
         sleep_until(&next_wake);
 
         lidar_data inflight{};
-        state->load_data_blocking(&inflight);
+        state->load_data_blocking(inflight);
 
         pthread_mutex_lock(state->loaded.mutex);
 
@@ -72,7 +72,7 @@ void *preprocess_discard_thread(void *arg)
         pthread_mutex_unlock(state->loaded.mutex);
 
         lidar_data outbound{};
-        preprocess_discard(&inflight, &outbound);
+        preprocess_discard(inflight, outbound);
 
         pthread_mutex_lock(state->preprocessed.mutex);
 
@@ -123,26 +123,26 @@ void *identify_driveable_thread(void *arg)
         pthread_mutex_unlock(state->preprocessed.mutex);
 
         lidar_data output;
-        identify_driveable(&inflight, &output);
+        identify_driveable(inflight, output);
 
-        state->publish_data(&output);
+        state->publish_data(output);
     }
 
     return nullptr;
 }
 
-void setup_mutex_cond(struct state *state)
+void setup_mutex_cond(struct state &state)
 {
-    state->loaded.mutex = new pthread_mutex_t;
-    state->loaded.data_is_null = new pthread_cond_t;
-    state->loaded.data_available = new pthread_cond_t;
-    state->preprocessed.mutex = new pthread_mutex_t;
-    state->preprocessed.data_is_null = new pthread_cond_t;
-    state->preprocessed.data_available = new pthread_cond_t;
-    pthread_mutex_init(state->loaded.mutex, nullptr);
-    pthread_cond_init(state->loaded.data_is_null, nullptr);
-    pthread_cond_init(state->loaded.data_available, nullptr);
-    pthread_mutex_init(state->preprocessed.mutex, nullptr);
-    pthread_cond_init(state->preprocessed.data_is_null, nullptr);
-    pthread_cond_init(state->preprocessed.data_available, nullptr);
+    state.loaded.mutex = new pthread_mutex_t;
+    state.loaded.data_is_null = new pthread_cond_t;
+    state.loaded.data_available = new pthread_cond_t;
+    state.preprocessed.mutex = new pthread_mutex_t;
+    state.preprocessed.data_is_null = new pthread_cond_t;
+    state.preprocessed.data_available = new pthread_cond_t;
+    pthread_mutex_init(state.loaded.mutex, nullptr);
+    pthread_cond_init(state.loaded.data_is_null, nullptr);
+    pthread_cond_init(state.loaded.data_available, nullptr);
+    pthread_mutex_init(state.preprocessed.mutex, nullptr);
+    pthread_cond_init(state.preprocessed.data_is_null, nullptr);
+    pthread_cond_init(state.preprocessed.data_available, nullptr);
 }

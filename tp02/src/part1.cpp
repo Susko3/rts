@@ -22,16 +22,16 @@ timespec end_timing()
     return result;
 }
 
-void assert_some_filtered(lidar_data *pr, lidar_data *dr)
+void assert_some_filtered(const lidar_data &pr, const lidar_data &dr)
 {
-    assert(pr->points.size() >= dr->points.size());
+    assert(pr.points.size() >= dr.points.size());
 }
 
 void process(std::string file_name)
 {
     start_timing();
     lidar_data data{};
-    load_data(file_name, &data);
+    load_data(file_name, data);
     auto delta_load = end_timing();
 
     std::printf("Loading took:\t\t");
@@ -41,28 +41,28 @@ void process(std::string file_name)
     lidar_data preprocessed = {};
 
     start_timing();
-    preprocess_discard(&data, &preprocessed);
+    preprocess_discard(data, preprocessed);
     auto delta_pp = end_timing();
 
     std::printf("Preprocessing took:\t");
     print(&delta_pp);
     std::printf("\n");
 
-    assert_some_filtered(&data, &preprocessed);
+    assert_some_filtered(data, preprocessed);
 
     lidar_data driveable = {};
 
     start_timing();
-    identify_driveable(&preprocessed, &driveable);
+    identify_driveable(preprocessed, driveable);
     auto delta_id = end_timing();
 
     std::printf("Identifying took:\t");
     print(&delta_id);
     std::printf("\n");
 
-    assert_some_filtered(&preprocessed, &driveable);
+    assert_some_filtered(preprocessed, driveable);
 
-    write_data(file_name + "_out.txt", &driveable);
+    write_data(file_name + "_out.txt", driveable);
 }
 
 int main()

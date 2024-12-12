@@ -31,7 +31,7 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
     }
 }
 
-void load_data_from_files(lidar_data *data)
+void load_data_from_files(lidar_data &data)
 {
     std::initializer_list<std::string> files = {
         "point_cloud1.txt",
@@ -55,9 +55,9 @@ void setup_signal_handler()
     assert(sigaction(SIGINT, &sa, nullptr) == 0);
 }
 
-void print_data(lidar_data *data)
+void print_data(const lidar_data &data)
 {
-    std::cout << "Final data size: " << data->points.size() << std::endl;
+    std::cout << "Final data size: " << data.points.size() << std::endl;
 
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
@@ -77,7 +77,7 @@ int main()
     state_unsafe.publish_data = print_data;
 
     state_unsafe.running = 1;
-    setup_mutex_cond(&state_unsafe);
+    setup_mutex_cond(state_unsafe);
 
     setup_signal_handler();
 
