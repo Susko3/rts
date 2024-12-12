@@ -16,7 +16,10 @@ struct lidar_data
     std::vector<point3d> points;
 };
 
+void data_stats(lidar_data *data);
+
 void load_data(std::string file_name, lidar_data *data);
+
 void write_data(std::string file_name, lidar_data *data);
 
 void preprocess_discard(lidar_data *input, lidar_data *output, float forward = 30, float side = 15, float top = 2);
